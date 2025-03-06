@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <title>ODRL Evaluator</title>
+    <script src="./main.js"></script>
+    <style>
+        .no-underline {
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Live demonstration of the <a href="https://github.com/SolidLabResearch/ODRL-Evaluator"
+                class="no-underline">ODRL Evaluator</a></h1>
+        TODO: add dropdown that loads the examples from <a
+            href="https://github.com/SolidLabResearch/ODRL-Test-Suite/blob/">ODRL test suite</a>
+        <p>
+            The ODRL Evaluator is open-source software that realizes the evaluation of an ODRL policy.
+            It does so by generating a <a
+                href="https://github.com/SolidLabResearch/ODRL-Compliance-Report-Model">Compliance Report</a>, that
+            states clearly for each policy which rules are active or not and the reason why through the satisfaction
+            state of its constraints.
+        </p>
+        <table>
+            <tr>
+                <td>
+                    <h3>ODRL Request</h3>
+                    <i>An Access Request modelled as an ODRL Request with one permission Rule</i>
+                    <textarea id="request" rows="15" cols="55">
+@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
+@prefix ex: <http://example.org/>.
+@prefix dct: <http://purl.org/dc/terms/>.
+
+
+<urn:uuid:1bafee59-006c-46a3-810c-5d176b4be364> a odrl:Request;
+    dct:description "Requesting Party ALICE requests to READ resource X.";
+    odrl:permission <urn:uuid:186be541-5857-4ce3-9f03-1a274f16bf59>.
+<urn:uuid:186be541-5857-4ce3-9f03-1a274f16bf59> a odrl:Permission;
+    odrl:assignee ex:alice;
+    odrl:action odrl:read;
+    odrl:target ex:x.
+        </textarea>
+
+                </td>
+                <td>
+                    <h3>ODRL Policy</h3>
+                    <i>An ODRL Policy</i>
+                    <textarea id="policy" rows="15" cols="55">
+@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
+@prefix ex: <http://example.org/>.
+@prefix dct: <http://purl.org/dc/terms/>.
+
+<urn:uuid:95efe0e8-4fb7-496d-8f3c-4d78c97829bc> a odrl:Set;
+    dct:description "ZENO is data owner of resource X. ALICE may READ resource X.";
+    dct:source <https://github.com/woutslabbinck/UCR-test-suite/blob/main/ODRL-Example.md>;
+    odrl:permission <urn:uuid:f5199b0a-d824-45a0-bc08-1caa8d19a001>.
+<urn:uuid:f5199b0a-d824-45a0-bc08-1caa8d19a001> a odrl:Permission;
+    odrl:action odrl:read;
+    odrl:target ex:x;
+    odrl:assignee ex:alice;
+    odrl:assigner ex:zeno.
+        </textarea>
+
+                </td>
+            </tr>
+        </table>
+
+        <h3>State of the World</h3>
+        <i>The state of the world must contain a time indication</i>
+        <textarea id="sotw" rows="5" cols="55">
+@prefix temp: <http://example.com/request/>.
+@prefix dct: <http://purl.org/dc/terms/>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+    
+temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.
+
+        </textarea>
+        </td>
+        </tr>
+        </table>
+        <button id='evaluate'>Evaluate</button>
+    </div>
+
+    <div class="container">
+        <h3>ODRL Compliance Report</h3>
+
+        <pre id="output"></pre>
+    </div>
+    <div class="container">
+
+        <h2>Why the ODRL Evaluator?</h2>
+        <p>
+            The <a><a href="https://www.w3.org/TR/odrl/" class="no-underline">Open Digital Rights Language (ODRL)</a> is
+                a W3C standard that is used to express usage control policies.
+                However, the lack of defined interpretations for these policies leads to inconsistencies and
+                interoperability issues across different platforms.
+        </p>
+        <p>
+            One notable example of these issues is the interpretation of constraint values as defined by ODRL. Consider
+            <code><a href="https://www.w3.org/TR/odrl-vocab/#term-dateTime" class="no-underline">odrl:dateTime</a></code>,
+            which is described as
+            <q><i>The date (and optional time and timezone) of exercising the action of the Rule</i></q>.
+            While this implies that the current time should be used, there is no mechanism within ODRL to prove that the
+            evaluation occurred at the specified time. This problem extends to all left operand values in ODRL.
+        </p>
+
+        <p>
+            Recognizing this need, the <a href="https://w3c.github.io/odrl/formal-semantics/" class="no-underline">ODRL Formal Semantics</a> group laid the groundwork for the expected behaviour of an <b>ODRL Evaluator</b>.
+        </p>
+
+        <p>
+            Based on that work, we created the <a
+            href="https://github.com/SolidLabResearch/ODRL-Compliance-Report-Model">ODRL Compliance Report Model</a> to represent the output of an ODRL Evaluator.
+            This live demonstrater here generates these reports through reasoning over the inputs:
+            <ul>
+                <li>ODRL Policy</li>
+                <li>ODRL Request: A formal description of the request containing the intended action <i>(represented as an ODRL Request with one ODRL permission rule)</i></li>
+                <li>State of the World: A formal description of the state of the world<i>(including current time)</i></li>
+            </ul>
+        </p>
+
+        <p>All the calculations are performed in the browser, facilitated through the <a href="https://github.com/eyereasoner/eye-js" class="no-underline"></a>EYE reasoning engine</p>
+    
+    </div>
+</body>
+
+</html>
