@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 })
 
 function reset() {
+    hideLoader()
     document.getElementById('policy').value = 
 `@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
 @prefix ex: <http://example.org/>.
