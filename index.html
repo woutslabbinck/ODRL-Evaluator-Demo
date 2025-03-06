@@ -37,15 +37,13 @@
 @prefix ex: <http://example.org/>.
 @prefix dct: <http://purl.org/dc/terms/>.
 
-
 <urn:uuid:1bafee59-006c-46a3-810c-5d176b4be364> a odrl:Request;
     dct:description "Requesting Party ALICE requests to READ resource X.";
     odrl:permission <urn:uuid:186be541-5857-4ce3-9f03-1a274f16bf59>.
 <urn:uuid:186be541-5857-4ce3-9f03-1a274f16bf59> a odrl:Permission;
     odrl:assignee ex:alice;
     odrl:action odrl:read;
-    odrl:target ex:x.
-        </textarea>
+    odrl:target ex:x.</textarea>
 
                 </td>
                 <td>
@@ -64,9 +62,7 @@
     odrl:action odrl:read;
     odrl:target ex:x;
     odrl:assignee ex:alice;
-    odrl:assigner ex:zeno.
-        </textarea>
-
+    odrl:assigner ex:zeno.</textarea>
                 </td>
             </tr>
         </table>
@@ -77,10 +73,8 @@
 @prefix temp: <http://example.com/request/>.
 @prefix dct: <http://purl.org/dc/terms/>.
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
-    
-temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.
 
-        </textarea>
+temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.</textarea>
         </td>
         </tr>
         </table>
@@ -111,22 +105,28 @@ temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.
         </p>
 
         <p>
-            Recognizing this need, the <a href="https://w3c.github.io/odrl/formal-semantics/" class="no-underline">ODRL Formal Semantics</a> group laid the groundwork for the expected behaviour of an <b>ODRL Evaluator</b>.
+            Recognizing this need, the <a href="https://w3c.github.io/odrl/formal-semantics/" class="no-underline">ODRL
+                Formal Semantics</a> group laid the groundwork for the expected behaviour of an <b>ODRL Evaluator</b>.
         </p>
 
         <p>
             Based on that work, we created the <a
-            href="https://github.com/SolidLabResearch/ODRL-Compliance-Report-Model">ODRL Compliance Report Model</a> to represent the output of an ODRL Evaluator.
+                href="https://github.com/SolidLabResearch/ODRL-Compliance-Report-Model">ODRL Compliance Report Model</a>
+            to represent the output of an ODRL Evaluator.
             This live demonstrater here generates these reports through reasoning over the inputs:
-            <ul>
-                <li>ODRL Policy</li>
-                <li>ODRL Request: A formal description of the request containing the intended action <i>(represented as an ODRL Request with one ODRL permission rule)</i></li>
-                <li>State of the World: A formal description of the state of the world<i>(including current time)</i></li>
-            </ul>
+        <ul>
+            <li>ODRL Policy</li>
+            <li>ODRL Request: A formal description of the request containing the intended action <i>(represented as an
+                    ODRL Request with one ODRL permission rule)</i></li>
+            <li>State of the World: A formal description of the state of the world<i>(including current time)</i></li>
+        </ul>
         </p>
 
-        <p>All the calculations are performed in the browser, facilitated through the <a href="https://github.com/eyereasoner/eye-js" class="no-underline"></a>EYE reasoning engine</p>
-    <p><i> ©2025–now Ghent University – imec, Belgium. <a href="https://github.com/woutslabbinck/ODRL-Evaluator-Demo" class="no-underline">Source code.</a></i></p>
+        <p>All the calculations are performed in the browser, facilitated through the <a
+                href="https://github.com/eyereasoner/eye-js" class="no-underline"></a>EYE reasoning engine</p>
+        <p><i> ©2025–now Ghent University – imec, Belgium. <a
+                    href="https://github.com/woutslabbinck/ODRL-Evaluator-Demo" class="no-underline">Source
+                    code.</a></i></p>
     </div>
 </body>
 
