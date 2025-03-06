@@ -12,7 +12,9 @@ const prefixes = {
     'foaf': 'http://xmlns.com/foaf/0.1/',
     'report': 'http://example.com/report/temp/'
 }
+
 async function odrlEvaluate() {
+    showLoader()
     const odrlPolicyText = document.getElementById('policy').value;
     const odrlRequestText = document.getElementById('request').value;
     const stateOfTheWorldText = document.getElementById('sotw').value;
@@ -40,6 +42,7 @@ async function odrlEvaluate() {
         stateOfTheWorldStore)
 
     const prettyResult = await write(reasoningResult, { prefixes })
+    hideLoader()
     document.getElementById('output').innerText = prettyResult;
 
 }
@@ -83,4 +86,14 @@ document.getElementById('sotw').value =
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 
 temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.`
+}
+
+
+function showLoader() {
+    document.getElementById('loader-text').style.display = 'block';
+}
+
+// Function to hide the loader and show content
+function hideLoader() {
+    document.getElementById('loader-text').style.display = 'none';
 }

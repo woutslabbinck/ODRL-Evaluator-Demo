@@ -11,6 +11,22 @@
         .no-underline {
             text-decoration: none;
         }
+
+        .button-wrapper {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .flex-container {
+            display: flex;
+            align-items: center;
+            /* Align items vertically in the center */
+        }
+
+        #loader-text {
+            display: none;
+        }
     </style>
 </head>
 
@@ -78,7 +94,10 @@ temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.</textarea>
         </td>
         </tr>
         </table>
-        <button id='evaluate'>Evaluate</button>
+        <div class="flex-container">
+            <button id='evaluate'>Evaluate</button>
+            <p id="loader-text">Evaluating the policy...</p>
+        </div>
     </div>
 
     <div class="container">
