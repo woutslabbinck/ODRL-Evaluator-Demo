@@ -20,6 +20,7 @@
   "dependencies": {
     "@jeswr/pretty-turtle": "^1.5.0",
     "n3": "^1.23.2",
-    "odrl-evaluator": "0.2.0"
+    "odrl-evaluator": "0.2.0",
+    "odrl-test-suite":"0.1.1"
   }
 }

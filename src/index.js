@@ -1,8 +1,14 @@
 
 const { ODRLEvaluator, ODRLEngineMultipleSteps } = require('odrl-evaluator');
 const N3 = require('n3')
-const { Parser } = N3
+const { Parser, Store } = N3
+const { loadWebTestCase } = require('odrl-test-suite')
 import { write } from '@jeswr/pretty-turtle';
+
+let indexStore = new Store()
+let index = {}
+const parser = new Parser();
+
 const prefixes = {
     'odrl': 'http://www.w3.org/ns/odrl/2/',
     'ex': 'http://example.org/',
@@ -13,12 +19,18 @@ const prefixes = {
     'report': 'http://example.com/report/temp/'
 }
 
+document.addEventListener('DOMContentLoaded', (event) => {
+    console.log('main.js loaded');
+    document.getElementById('evaluate').addEventListener('click', odrlEvaluate)
+    document.getElementById('dropdown').addEventListener('change', loadTestCase)
+})
+
+
 async function odrlEvaluate() {
     showLoader()
     const odrlPolicyText = document.getElementById('policy').value;
     const odrlRequestText = document.getElementById('request').value;
     const stateOfTheWorldText = document.getElementById('sotw').value;
-    const parser = new Parser();
     let odrlPolicyStore, odrlRequestStore, stateOfTheWorldStore;
     try {
         odrlPolicyStore = parser.parse(odrlPolicyText);
@@ -47,15 +59,12 @@ async function odrlEvaluate() {
 
 }
 
-document.addEventListener('DOMContentLoaded', (event) => {
-    console.log('main.js loaded');
-    document.getElementById('evaluate').addEventListener('click', odrlEvaluate)
-})
+
 
 function reset() {
     hideLoader()
-    document.getElementById('policy').value = 
-`@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
+    document.getElementById('policy').value =
+        `@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
 @prefix ex: <http://example.org/>.
 @prefix dct: <http://purl.org/dc/terms/>.
 
@@ -69,8 +78,8 @@ function reset() {
     odrl:assignee ex:alice;
     odrl:assigner ex:zeno.
     `
-    document.getElementById('request').value=
-`@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
+    document.getElementById('request').value =
+        `@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
 @prefix ex: <http://example.org/>.
 @prefix dct: <http://purl.org/dc/terms/>.
 
@@ -81,8 +90,8 @@ function reset() {
     odrl:assignee ex:alice;
     odrl:action odrl:read;
     odrl:target ex:x.`
-document.getElementById('sotw').value =
-`@prefix temp: <http://example.com/request/>.
+    document.getElementById('sotw').value =
+        `@prefix temp: <http://example.com/request/>.
 @prefix dct: <http://purl.org/dc/terms/>.
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 
@@ -97,4 +106,34 @@ function showLoader() {
 // Function to hide the loader and show content
 function hideLoader() {
     document.getElementById('loader-text').style.display = 'none';
+}
+
+async function loadTestCaseIndex() {
+    const indexResponse = await fetch("https://raw.githubusercontent.com/SolidLabResearch/ODRL-Test-Suite/refs/heads/main/data/index.ttl")
+    const indexText = await indexResponse.text();
+    indexStore.addQuads(parser.parse(indexText))
+    
+    const titles = indexStore.getQuads(null, 'http://purl.org/dc/terms/title', null, null);
+    for (const title of titles) {
+        index[title.subject.id] = title.object.value
+    }
+    const dropdown = document.getElementById("dropdown");
+    Object.entries(index).forEach(([key, value]) => {
+        const option = document.createElement("option");
+        option.value = key; // Store the key
+        option.textContent = value; // Display the value
+        dropdown.appendChild(option);
+    });
+    
+}
+loadTestCaseIndex();
+
+async function loadTestCase() {
+    const dropdown = document.getElementById("dropdown");
+    const testCase = await loadWebTestCase(dropdown.value, [...indexStore]);
+    
+    document.getElementById('policy').value = await write(testCase.policy.quads, { prefixes });
+    document.getElementById('request').value = await write(testCase.request.quads, { prefixes });
+    document.getElementById('sotw').value = await write(testCase.stateOfTheWorld.quads, { prefixes });
+
 }

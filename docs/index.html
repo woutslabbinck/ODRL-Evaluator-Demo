@@ -27,6 +27,17 @@
         #loader-text {
             display: none;
         }
+        /* Ensure label text stays on a single line */
+        label {
+            white-space: nowrap;
+        }
+        /* Style to make dropdown and button appear side by side */
+        .dropdown-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            /* Space between dropdown and button */
+        }
     </style>
 </head>
 
@@ -34,7 +45,7 @@
     <div class="container">
         <h1>Live demonstration of the <a href="https://github.com/SolidLabResearch/ODRL-Evaluator"
                 class="no-underline">ODRL Evaluator</a></h1>
-      
+
         <p>
             The ODRL Evaluator is open-source software that realizes the evaluation of an ODRL policy.
             It does so by generating a <a
@@ -42,11 +53,16 @@
             states clearly for each policy which rules are active or not and the reason why through the satisfaction
             state of its constraints.
         </p>
+        <div class="dropdown-container">
+            <label for="dropdown">Select a Test Case:</label>
+            <select id="dropdown">
+                <!-- Options will be dynamically populated -->
+            </select>
+        </div>
         <table>
             <tr>
                 <td>
                     <h3>ODRL Request</h3>
-                    <i>An Access Request modelled as an ODRL Request with one permission Rule</i>
                     <textarea id="request" rows="15" cols="55">
 @prefix odrl: <http://www.w3.org/ns/odrl/2/>.
 @prefix ex: <http://example.org/>.
@@ -63,7 +79,6 @@
                 </td>
                 <td>
                     <h3>ODRL Policy</h3>
-                    <i>An ODRL Policy</i>
                     <textarea id="policy" rows="15" cols="55">
 @prefix odrl: <http://www.w3.org/ns/odrl/2/>.
 @prefix ex: <http://example.org/>.
@@ -83,7 +98,6 @@
         </table>
 
         <h3>State of the World</h3>
-        <i>The state of the world must contain a time indication</i>
         <textarea id="sotw" rows="5" cols="55">
 @prefix temp: <http://example.com/request/>.
 @prefix dct: <http://purl.org/dc/terms/>.
