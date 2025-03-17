@@ -1,14 +1,14 @@
 
-const { ODRLEvaluator, ODRLEngineMultipleSteps } = require('odrl-evaluator');
-const N3 = require('n3')
-const { Parser, Store } = N3
-const { loadWebTestCase } = require('odrl-test-suite')
+import { ODRLEvaluator, ODRLEngineMultipleSteps } from 'odrl-evaluator';
+import { Parser, Store } from 'n3';
+import { loadWebTestCase } from 'odrl-test-suite';
 import { write } from '@jeswr/pretty-turtle';
-
+import { createVocabulary } from 'rdf-vocabulary'
 let indexStore = new Store()
 let index = {}
 const parser = new Parser();
 const evaluator = new ODRLEvaluator(new ODRLEngineMultipleSteps());
+
 
 const prefixes = {
     'odrl': 'http://www.w3.org/ns/odrl/2/',
@@ -42,7 +42,8 @@ function init() {
 
 /**
  * Evaluate the policy using the {@link ODRLEvaluator}
- * Also shows effects (loading) and visualizes the output
+ * Also shows effects (loading) and visualizes the output.
+ * Furthermore, outputs a human-readable output (right above the actual report)
  * @returns 
  */
 async function odrlEvaluate() {
@@ -121,7 +122,8 @@ async function loadTestCase() {
 }
 
 /**
- * F
+ * Fetches the description from data (that contains a description).
+ * Note that it fetches the first description, so you might give an error if an extra description is added.
  * @param {string} data 
  * @returns 
  */
@@ -135,7 +137,6 @@ function fetchDescription(data) {
     if (!store) {
         return
     }
-
     const description = store.getQuads(null, 'http://purl.org/dc/terms/description', null, null)[0];
     if (!description) {
         // no description exist,
@@ -144,6 +145,46 @@ function fetchDescription(data) {
     return description.object.value
 }
 
+/**
+ * Calculates human readable feedback based on an ODRL Compliance Report
+ * @param {string} report 
+ */
+function humanReadableReport(report) {
+    const reportStore = new Store(parser.parse(report));
+    const requestStore = new Store(parser.parse(fetchRequest())); // technically can error, tho chances are slim
+
+    const reportNodes = reportStore.getQuads(null, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", CR.terms.PolicyReport, null);
+    if (reportNodes.length !== 1) {
+        throw Error(`Expected one expected report identifier. Found ${reportNodes.length}`);
+    }
+    const reportID = reportNodes[0].subject.id;
+    const policyReport = parseComplianceReport(reportID, reportStore);
+
+    // assumes only one request permission
+    const requestSubject = requestStore.getQuads(null, "http://www.w3.org/ns/odrl/2/assignee", null, null)[0].object.value;
+    const requestAction = requestStore.getQuads(null, "http://www.w3.org/ns/odrl/2/action", null, null)[0].object.value;
+    const requestResource = requestStore.getQuads(null, "http://www.w3.org/ns/odrl/2/target", null, null)[0].object.value;
+
+    let humanReadable = ""
+    // Note: currently, we only care about one report
+    switch (policyReport.ruleReport[0].type) {
+        case CR.PermissionReport:
+            if (policyReport.ruleReport[0].activationState === CR.Active) {
+                humanReadable = `<b>${requestSubject}</b> is ALLOWED to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
+            } else {
+                humanReadable = `<b>${requestSubject}</b> is NOT ALLOWED to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
+            }
+            break;
+        case CR.ProhibitionReport:
+            if (policyReport.ruleReport[0].activationState === CR.Active) {
+                humanReadable = `<b>${requestSubject}</b> is NOT ALLOWED to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
+            }
+            break;
+        default:
+            humanReadable = `Not enough information is present to determine whether <b>${requestSubject}</b> is allowed to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
+    }
+    return humanReadable
+}
 
 /**
  * Fetches the ODRL policy from DOM.
@@ -215,6 +256,9 @@ function fetchComplianceReport() {
  */
 function writeComplianceReport(newValue) {
     document.getElementById('output').innerText = newValue;
+    const description = humanReadableReport(newValue);
+    document.getElementById('output-info').innerHTML = description;
+
 }
 
 /**
@@ -261,3 +305,112 @@ const defaultSOTW = `@prefix temp: <http://example.com/request/>.
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 
 temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.`
+
+
+// copied from https://github.com/SolidLabResearch/user-managed-access/blob/feat/ODRL-evaluator/packages/uma/src/policies/authorizers/OdrlAuthorizer.ts
+const CR = createVocabulary('http://example.com/report/temp/',
+    'PolicyReport',
+    'RuleReport',
+    'PermissionReport',
+    'ProhibitionReport',
+    'DutyReport',
+    'PremiseReport',
+    'ConstraintReport',
+    'PartyReport',
+    'ActionReport',
+    'TargetReport',
+    'ActivationState',
+    'Active',
+    'Inactive',
+    'AttemptState',
+    'Attempted',
+    'NotAttempted',
+    'PerformanceState',
+    'Performed',
+    'Unperformed',
+    'Unknown',
+    'DeonticState',
+    'NonSet',
+    'Violated',
+    'Fulfilled',
+    'SatisfactionState',
+    'Satisfied',
+    'Unsatisfied',
+    'policy',
+    'policyRequest',
+    'ruleReport',
+    'conditionReport',
+    'premiseReport',
+    'rule',
+    'ruleRequest',
+    'activationState',
+    'attemptState',
+    'performanceState',
+    'deonticState',
+    'constraint',
+    'satisfactionState',
+);
+
+// Enum-like structures using Object.freeze()
+const RuleReportType = Object.freeze({
+    PermissionReport: 'http://example.com/report/temp/PermissionReport',
+    ProhibitionReport: 'http://example.com/report/temp/ProhibitionReport',
+    ObligationReport: 'http://example.com/report/temp/ObligationReport',
+});
+
+const SatisfactionState = Object.freeze({
+    Satisfied: 'http://example.com/report/temp/Satisfied',
+    Unsatisfied: 'http://example.com/report/temp/Unsatisfied',
+});
+
+const PremiseReportType = Object.freeze({
+    ConstraintReport: 'http://example.com/report/temp/ConstraintReport',
+    PartyReport: 'http://example.com/report/temp/PartyReport',
+    TargetReport: 'http://example.com/report/temp/TargetReport',
+    ActionReport: 'http://example.com/report/temp/ActionReport',
+});
+
+const ActivationState = Object.freeze({
+    Active: 'http://example.com/report/temp/Active',
+    Inactive: 'http://example.com/report/temp/Inactive',
+});
+
+// Functions rewritten in plain JavaScript
+function parseComplianceReport(identifier, store) {
+    const exists = store.getQuads(identifier, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", CR.PolicyReport, null).length === 1;
+    if (!exists) {
+        throw new Error(`No Policy Report found with: ${identifier}.`);
+    }
+    const ruleReportNodes = store.getObjects(identifier, CR.ruleReport, null);
+
+    return {
+        id: identifier,
+        created: store.getObjects(identifier, "http://purl.org/dc/terms/created", null)[0],
+        policy: store.getObjects(identifier, CR.policy, null)[0],
+        request: store.getObjects(identifier, CR.policyRequest, null)[0],
+        ruleReport: ruleReportNodes.map(ruleReportNode => parseRuleReport(ruleReportNode, store)),
+    };
+}
+
+function parseRuleReport(identifier, store) {
+    const premiseNodes = store.getObjects(identifier, CR.premiseReport, null);
+    return {
+        id: identifier,
+        type: store.getObjects(identifier, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null)[0].value,
+        activationState: store.getObjects(identifier, CR.activationState, null)[0].value,
+        requestedRule: store.getObjects(identifier, CR.ruleRequest, null)[0],
+        rule: store.getObjects(identifier, CR.rule, null)[0],
+        premiseReport: premiseNodes.map(prem => parsePremiseReport(prem, store)),
+    };
+}
+
+function parsePremiseReport(identifier, store) {
+    const nestedPremises = store.getObjects(identifier, CR.PremiseReport, null);
+    return {
+        id: identifier,
+        type: store.getObjects(identifier, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null)[0].value,
+        premiseReport: nestedPremises.map(prem => parsePremiseReport(prem, store)),
+        satisfactionState: store.getObjects(identifier, CR.satisfactionState, null)[0].value,
+    };
+}
+
