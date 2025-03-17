@@ -85,6 +85,7 @@ function reset() {
     writePolicy(defaultPolicy)
     writeRequest(defaultRequest)
     writeSOTW(defaultSOTW)
+    writeComplianceReport("")
 }
 
 /**
@@ -110,7 +111,8 @@ async function loadTestCaseIndex() {
 }
 
 /**
- * Loads the selected test case in the DOM
+ * Loads the selected test case in the DOM.
+ * Also resets potential created compliance Reports.
  */
 async function loadTestCase() {
     const dropdown = document.getElementById("dropdown");
@@ -119,6 +121,7 @@ async function loadTestCase() {
     writePolicy(await write(testCase.policy.quads, { prefixes }));
     writeRequest(await write(testCase.request.quads, { prefixes }));
     writeSOTW(await write(testCase.stateOfTheWorld.quads, { prefixes }));
+    writeComplianceReport("")
 }
 
 /**
@@ -258,9 +261,12 @@ function fetchComplianceReport() {
  */
 function writeComplianceReport(newValue) {
     document.getElementById('output').innerText = newValue;
-    const description = humanReadableReport(newValue);
-    document.getElementById('output-info').innerHTML = description;
-
+    try {
+        const description = humanReadableReport(newValue);
+        document.getElementById('output-info').innerHTML = description;
+    } catch (error) {
+        document.getElementById('output-info').innerHTML = "";
+    }
 }
 
 /**
