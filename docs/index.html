@@ -60,47 +60,19 @@
             <tr>
                 <td>
                     <h3>ODRL Request</h3>
-                    <textarea id="request" rows="15" cols="55">
-@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
-@prefix ex: <http://example.org/>.
-@prefix dct: <http://purl.org/dc/terms/>.
-
-<urn:uuid:1bafee59-006c-46a3-810c-5d176b4be364> a odrl:Request;
-    dct:description "Requesting Party ALICE requests to READ resource X.";
-    odrl:permission <urn:uuid:186be541-5857-4ce3-9f03-1a274f16bf59>.
-<urn:uuid:186be541-5857-4ce3-9f03-1a274f16bf59> a odrl:Permission;
-    odrl:assignee ex:alice;
-    odrl:action odrl:read;
-    odrl:target ex:x.</textarea>
-
+                    <i id="request-info"></i>
+                    <textarea id="request" rows="15" cols="55"></textarea>
                 </td>
                 <td>
                     <h3>ODRL Policy</h3>
-                    <textarea id="policy" rows="15" cols="55">
-@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
-@prefix ex: <http://example.org/>.
-@prefix dct: <http://purl.org/dc/terms/>.
-
-<urn:uuid:95efe0e8-4fb7-496d-8f3c-4d78c97829bc> a odrl:Set;
-    dct:description "ZENO is data owner of resource X. ALICE may READ resource X.";
-    dct:source <https://github.com/woutslabbinck/UCR-test-suite/blob/main/ODRL-Example.md>;
-    odrl:permission <urn:uuid:f5199b0a-d824-45a0-bc08-1caa8d19a001>.
-<urn:uuid:f5199b0a-d824-45a0-bc08-1caa8d19a001> a odrl:Permission;
-    odrl:action odrl:read;
-    odrl:target ex:x;
-    odrl:assignee ex:alice;
-    odrl:assigner ex:zeno.</textarea>
+                    <i id="policy-info"></i>
+                    <textarea id="policy" rows="15" cols="55"></textarea>
                 </td>
             </tr>
         </table>
 
         <h3>State of the World</h3>
-        <textarea id="sotw" rows="5" cols="55">
-@prefix temp: <http://example.com/request/>.
-@prefix dct: <http://purl.org/dc/terms/>.
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
-
-temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.</textarea>
+        <textarea id="sotw" rows="5" cols="55"></textarea>
         </td>
         </tr>
         </table>
