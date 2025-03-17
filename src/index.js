@@ -178,6 +178,8 @@ function humanReadableReport(report) {
         case CR.ProhibitionReport:
             if (policyReport.ruleReport[0].activationState === CR.Active) {
                 humanReadable = `<b>${requestSubject}</b> is NOT ALLOWED to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
+            } else {
+                humanReadable = `Not enough information is present to determine whether <b>${requestSubject}</b> is allowed to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
             }
             break;
         default:
