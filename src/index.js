@@ -17,7 +17,7 @@ const prefixes = {
     'dct': 'http://purl.org/dc/terms/',
     'xsd': 'http://www.w3.org/2001/XMLSchema#',
     'foaf': 'http://xmlns.com/foaf/0.1/',
-    'report': 'http://example.com/report/temp/'
+    'report': 'https://w3id.org/force/compliance-report#'
 }
 document.addEventListener('DOMContentLoaded', (event) => {
     document.getElementById('evaluate').addEventListener('click', odrlEvaluate)
