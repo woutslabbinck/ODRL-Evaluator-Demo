@@ -262,9 +262,9 @@ function fetchComplianceReport() {
 function writeComplianceReport(newValue) {
     document.getElementById('output').innerText = newValue;
     try {
-        const description = humanReadableReport(newValue);
+        const description = humanReadableReport(newValue);        
         document.getElementById('output-info').innerHTML = description;
-    } catch (error) {
+    } catch (error) {       
         document.getElementById('output-info').innerHTML = "";
     }
 }
@@ -316,7 +316,7 @@ temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.`
 
 
 // copied from https://github.com/SolidLabResearch/user-managed-access/blob/feat/ODRL-evaluator/packages/uma/src/policies/authorizers/OdrlAuthorizer.ts
-const CR = createVocabulary('http://example.com/report/temp/',
+const CR = createVocabulary('https://w3id.org/force/compliance-report#',
     'PolicyReport',
     'RuleReport',
     'PermissionReport',
