@@ -17,13 +17,40 @@ const prefixes = {
     'dct': 'http://purl.org/dc/terms/',
     'xsd': 'http://www.w3.org/2001/XMLSchema#',
     'foaf': 'http://xmlns.com/foaf/0.1/',
-    'report': 'https://w3id.org/force/compliance-report#'
+    'report': 'https://w3id.org/force/compliance-report#',
+    'odrl3proposal': 'https://w3id.org/force/odrl3proposal#',
 }
+
+// only in the normal version
+let dropdown 
+
+// only in the odrl 3.0 version
+let odrl3cases;
+
 document.addEventListener('DOMContentLoaded', (event) => {
+    dropdown = document.getElementById("dropdown");
+    odrl3cases = document.getElementById("odrl3-dropdown");
+
+    if (dropdown) {
+        dropdown.addEventListener('change', loadTestCase)
+    }
     document.getElementById('evaluate').addEventListener('click', odrlEvaluate)
-    document.getElementById('dropdown').addEventListener('change', loadTestCase)
     init();
 
+    if (odrl3cases){
+        odrl3cases.addEventListener('change', loadODRL3Proposal);
+        
+        // load cases -> TODO: make generic through making a proper list
+        const option = document.createElement("option");
+        option.value = "dynamic-positive"; // Store the key
+        option.textContent = "Dynamic ODRL Constraint (positive)"; // Display the value
+        odrl3cases.appendChild(option);
+
+        const option2 = document.createElement("option");
+        option2.value = "dynamic-negative"; // Store the key
+        option2.textContent = "Dynamic ODRL Constraint (negative)"; // Display the value
+        odrl3cases.appendChild(option2);
+    }
     // allows to edit the description live (kind of ugly, but it works)
     document.getElementById('policy').addEventListener('input', () => {
         writePolicy(fetchPolicy());
@@ -100,13 +127,15 @@ async function loadTestCaseIndex() {
     for (const title of titles) {
         index[title.subject.id] = title.object.value
     }
-    const dropdown = document.getElementById("dropdown");
-    Object.entries(index).forEach(([key, value]) => {
-        const option = document.createElement("option");
-        option.value = key; // Store the key
-        option.textContent = value; // Display the value
-        dropdown.appendChild(option);
-    });
+
+    if (dropdown) {
+        Object.entries(index).forEach(([key, value]) => {
+            const option = document.createElement("option");
+            option.value = key; // Store the key
+            option.textContent = value; // Display the value
+            dropdown.appendChild(option);
+        });
+    }
 
 }
 
@@ -115,15 +144,28 @@ async function loadTestCaseIndex() {
  * Also resets potential created compliance Reports.
  */
 async function loadTestCase() {
-    const dropdown = document.getElementById("dropdown");
-    const testCase = await loadWebTestCase(dropdown.value, [...indexStore]);
+    if (dropdown) {
+        const testCase = await loadWebTestCase(dropdown.value, [...indexStore]);
 
-    writePolicy(await write(testCase.policy.quads, { prefixes }));
-    writeRequest(await write(testCase.request.quads, { prefixes }));
-    writeSOTW(await write(testCase.stateOfTheWorld.quads, { prefixes }));
-    writeComplianceReport("")
+        writePolicy(await write(testCase.policy.quads, { prefixes }));
+        writeRequest(await write(testCase.request.quads, { prefixes }));
+        writeSOTW(await write(testCase.stateOfTheWorld.quads, { prefixes }));
+        writeComplianceReport("")
+    }
 }
 
+function loadODRL3Proposal() {
+    // TODO: load test case based on the value rather than hardcoding the positive dynamic policy
+    if (odrl3cases) {
+        const testCase = odrl3cases.value
+
+        writePolicy(dynamicPolicy);
+        writeRequest(defaultRequest);
+        writeSOTW(dynamicSOTW);
+        writeComplianceReport("")
+    }
+    
+}
 /**
  * Fetches the description from data (that contains a description).
  * Note that it fetches the first description, so you might give an error if an extra description is added.
@@ -256,15 +298,15 @@ function fetchComplianceReport() {
 }
 
 /**
- * Writes a new value to the ODRL Compliance Reportto DOM.
+ * Writes a new value to the ODRL Compliance Report to DOM.
  * @param {string} newValue The new compliance report value to set.
  */
 function writeComplianceReport(newValue) {
     document.getElementById('output').innerText = newValue;
     try {
-        const description = humanReadableReport(newValue);        
+        const description = humanReadableReport(newValue);
         document.getElementById('output-info').innerHTML = description;
-    } catch (error) {       
+    } catch (error) {
         document.getElementById('output-info').innerHTML = "";
     }
 }
@@ -314,8 +356,47 @@ const defaultSOTW = `@prefix temp: <http://example.com/request/>.
 
 temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.`
 
+const dynamicPolicy = `
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix ex: <http://example.org/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix odrl3proposal: <https://w3id.org/force/odrl3proposal#> .
+
+<urn:uuid:5297a939-c364-4f93-a8bc-187cc58c8617> a odrl:Set ;
+  odrl:uid <urn:uuid:5297a939-c364-4f93-a8bc-187cc58c8617> ;
+  dct:description "ALICE may READ resource X when it is before 'ex:updateValue' (see SotW)." ;
+  odrl:permission <urn:uuid:3b03885a-b6dc-4800-9938-f518122c9706> .
+
+<urn:uuid:3b03885a-b6dc-4800-9938-f518122c9706> a odrl:Permission ;
+  odrl:assignee ex:alice ;
+  odrl:action odrl:read ;
+  odrl:target ex:x ;
+  odrl:constraint <urn:uuid:constraint:ab67b414-d0c8-48f6-8554-524130561f84> .
+
+<urn:uuid:constraint:ab67b414-d0c8-48f6-8554-524130561f84> odrl:leftOperand odrl:dateTime ;
+  odrl:operator odrl:lt ;
+  odrl:rightOperandReference ex:operandReference1 .
+
+ex:operandReference1 a odrl3proposal:OperandReference ;
+    odrl3proposal:reference ex:externalSource ;
+    odrl3proposal:path ex:updatedValue .`
+
+const dynamicSOTW = 
+`@prefix ex: <http://example.org/> .
+@prefix temp: <http://example.com/request/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+<urn:uuid:192620fa-06d9-447b-adbd-bd1ece4f9b12> a ex:Sotw ;
+  ex:includes temp:currentTime .
+
+temp:currentTime dct:issued "2017-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+
+# external value that will be materialized in the policy
+ex:externalSource ex:updatedValue "2018-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`
+
 
 // copied from https://github.com/SolidLabResearch/user-managed-access/blob/feat/ODRL-evaluator/packages/uma/src/policies/authorizers/OdrlAuthorizer.ts
+// TODO: remove after merge with https://github.com/SolidLabResearch/ODRL-Evaluator/tree/feat/policy-atomization
 const CR = createVocabulary('https://w3id.org/force/compliance-report#',
     'PolicyReport',
     'RuleReport',
