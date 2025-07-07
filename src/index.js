@@ -21,36 +21,38 @@ const prefixes = {
     'odrl3proposal': 'https://w3id.org/force/odrl3proposal#',
 }
 
+const DEFAULT = "default"
+const ODRL3 = "odrl3"
+// variable used across index.js to know which mode is being used
+/**
+ * Allowed values:
+ *  "default":  dropdown contains the ODRL Test Suite test cases
+ *  "odrl3":    dropdown contains the ODRL 3.0 proposal test cases
+ */
+let mode = DEFAULT
+
 // only in the normal version
-let dropdown 
+let dropdownDefault
 
 // only in the odrl 3.0 version
-let odrl3cases;
+let dropdownODRL3Cases;
 
 document.addEventListener('DOMContentLoaded', (event) => {
-    dropdown = document.getElementById("dropdown");
-    odrl3cases = document.getElementById("odrl3-dropdown");
+    dropdownDefault = document.getElementById("dropdown");
+    dropdownODRL3Cases = document.getElementById("odrl3-dropdown");
 
-    if (dropdown) {
-        dropdown.addEventListener('change', loadTestCase)
+    if (dropdownDefault) {
+        dropdownDefault.addEventListener('change', loadTestCase)
     }
     document.getElementById('evaluate').addEventListener('click', odrlEvaluate)
-    init();
 
-    if (odrl3cases){
-        odrl3cases.addEventListener('change', loadODRL3Proposal);
-        
-        // load cases -> TODO: make generic through making a proper list
-        const option = document.createElement("option");
-        option.value = "dynamic-positive"; // Store the key
-        option.textContent = "Dynamic ODRL Constraint (positive)"; // Display the value
-        odrl3cases.appendChild(option);
+    if (dropdownODRL3Cases) {
+        mode = ODRL3
+        dropdownODRL3Cases.addEventListener('change', loadODRL3Cases);
 
-        const option2 = document.createElement("option");
-        option2.value = "dynamic-negative"; // Store the key
-        option2.textContent = "Dynamic ODRL Constraint (negative)"; // Display the value
-        odrl3cases.appendChild(option2);
     }
+    
+    init();
     // allows to edit the description live (kind of ugly, but it works)
     document.getElementById('policy').addEventListener('input', () => {
         writePolicy(fetchPolicy());
@@ -64,7 +66,17 @@ function init() {
     // Initialise the policies
     reset();
     // load test cases when application starts
-    loadTestCaseIndex();
+    switch (mode) {
+        case DEFAULT:
+            loadTestCaseIndex();
+            break;
+        case ODRL3:
+            generateDropdownODRL3Cases();
+            break;
+        default:
+            loadTestCaseIndex();
+            break;
+    }
 }
 
 /**
@@ -109,9 +121,23 @@ async function odrlEvaluate() {
  */
 function reset() {
     hideLoader()
-    writePolicy(defaultPolicy)
-    writeRequest(defaultRequest)
-    writeSOTW(defaultSOTW)
+    switch (mode) {
+        case DEFAULT:
+            writePolicy(defaultPolicy)
+            writeRequest(defaultRequest)
+            writeSOTW(defaultSOTW)
+            break;
+        case ODRL3:
+            writePolicy(dynamicPolicy);
+            writeRequest(defaultRequest);
+            writeSOTW(dynamicSOTWPositive);
+            break;
+        default:
+            writePolicy(defaultPolicy)
+            writeRequest(defaultRequest)
+            writeSOTW(defaultSOTW)
+            break;
+    }
     writeComplianceReport("")
 }
 
@@ -128,24 +154,39 @@ async function loadTestCaseIndex() {
         index[title.subject.id] = title.object.value
     }
 
-    if (dropdown) {
+    if (dropdownDefault) {
         Object.entries(index).forEach(([key, value]) => {
             const option = document.createElement("option");
             option.value = key; // Store the key
             option.textContent = value; // Display the value
-            dropdown.appendChild(option);
+            dropdownDefault.appendChild(option);
         });
     }
-
 }
 
+/**
+ * Creates the dropdown menu for ODRL proposals
+ * TODO: should be hosted somewhere dynamically
+ *      Preferably in the github repo of https://w3id.org/force/odrl3proposal
+ */
+async function generateDropdownODRL3Cases() {
+    const option = document.createElement("option");
+    option.value = "dynamic-positive"; // Store the key
+    option.textContent = "Dynamic ODRL Constraint (positive)"; // Display the value
+    dropdownODRL3Cases.appendChild(option);
+
+    const option2 = document.createElement("option");
+    option2.value = "dynamic-negative"; // Store the key
+    option2.textContent = "Dynamic ODRL Constraint (negative)"; // Display the value
+    dropdownODRL3Cases.appendChild(option2);
+}
 /**
  * Loads the selected test case in the DOM.
  * Also resets potential created compliance Reports.
  */
 async function loadTestCase() {
-    if (dropdown) {
-        const testCase = await loadWebTestCase(dropdown.value, [...indexStore]);
+    if (dropdownDefault) {
+        const testCase = await loadWebTestCase(dropdownDefault.value, [...indexStore]);
 
         writePolicy(await write(testCase.policy.quads, { prefixes }));
         writeRequest(await write(testCase.request.quads, { prefixes }));
@@ -154,18 +195,34 @@ async function loadTestCase() {
     }
 }
 
-function loadODRL3Proposal() {
-    // TODO: load test case based on the value rather than hardcoding the positive dynamic policy
-    if (odrl3cases) {
-        const testCase = odrl3cases.value
+/**
+ * Loads the selected test case in the DOM.
+ * Also resets potential created compliance Reports.
+ * 
+ * NOTE: currently, these test cases are hard coded as there only a few of them. 
+ *      It is based on the keys defined in the function `generateDropdownODRL3Cases`
+ * TODO: fix after `generateDropdownODRL3Cases` it is issue is fixed
+*/
+function loadODRL3Cases() {
+    if (dropdownODRL3Cases) {
+        const testCase = dropdownODRL3Cases.value
 
+        switch (testCase) {
+            case "dynamic-positive":
+                writeSOTW(dynamicSOTWPositive);
+                break;
+            case "dynamic-negative":
+                writeSOTW(dynamicSOTWNegative);
+                break;
+            default:
+                break;
+        }
         writePolicy(dynamicPolicy);
         writeRequest(defaultRequest);
-        writeSOTW(dynamicSOTW);
         writeComplianceReport("")
     }
-    
 }
+
 /**
  * Fetches the description from data (that contains a description).
  * Note that it fetches the first description, so you might give an error if an extra description is added.
@@ -364,7 +421,7 @@ const dynamicPolicy = `
 
 <urn:uuid:5297a939-c364-4f93-a8bc-187cc58c8617> a odrl:Set ;
   odrl:uid <urn:uuid:5297a939-c364-4f93-a8bc-187cc58c8617> ;
-  dct:description "ALICE may READ resource X when it is before 'ex:updateValue' (see SotW)." ;
+  dct:description "ALICE may READ resource X when the current time (SotW) is before 'ex:updateValue' (see SotW)." ;
   odrl:permission <urn:uuid:3b03885a-b6dc-4800-9938-f518122c9706> .
 
 <urn:uuid:3b03885a-b6dc-4800-9938-f518122c9706> a odrl:Permission ;
@@ -381,8 +438,8 @@ ex:operandReference1 a odrl3proposal:OperandReference ;
     odrl3proposal:reference ex:externalSource ;
     odrl3proposal:path ex:updatedValue .`
 
-const dynamicSOTW = 
-`@prefix ex: <http://example.org/> .
+const dynamicSOTWPositive =
+    `@prefix ex: <http://example.org/> .
 @prefix temp: <http://example.com/request/> .
 @prefix dct: <http://purl.org/dc/terms/> .
 
@@ -394,6 +451,18 @@ temp:currentTime dct:issued "2017-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/
 # external value that will be materialized in the policy
 ex:externalSource ex:updatedValue "2018-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`
 
+const dynamicSOTWNegative =
+    `@prefix ex: <http://example.org/> .
+@prefix temp: <http://example.com/request/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+<urn:uuid:192620fa-06d9-447b-adbd-bd1ece4f9b12> a ex:Sotw ;
+  ex:includes temp:currentTime .
+
+temp:currentTime dct:issued "2017-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+
+# external value that will be materialized in the policy
+ex:externalSource ex:updatedValue "2016-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`
 
 // copied from https://github.com/SolidLabResearch/user-managed-access/blob/feat/ODRL-evaluator/packages/uma/src/policies/authorizers/OdrlAuthorizer.ts
 // TODO: remove after merge with https://github.com/SolidLabResearch/ODRL-Evaluator/tree/feat/policy-atomization
