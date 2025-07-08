@@ -44,12 +44,26 @@
         .highlight-info {
             color: var(--pico-primary)
         }
+
+        .logo {
+            height: 100px; 
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>Framework for ODRL Rule Compliance through Evaluation</h1>
+        <header class="page-header">
+            <h1 class="title">Framework for ODRL Rule Compliance through Evaluation</h1>
+            <img src="img/FORCE_logo.svg" alt="Logo" class="logo">
+        </header>
         <p>
             The Framework for ODRL Rule Compliance through Evaluation (FORCE) is open-source software that realizes the
             evaluation of an ODRL policy using the <a href="https://github.com/SolidLabResearch/ODRL-Evaluator"
