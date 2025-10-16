@@ -1,5 +1,5 @@
 const path = require('path');
-
+const webpack = require("webpack");
 module.exports = {
     mode: "development",
     entry: './src/index.js',
@@ -14,7 +14,11 @@ module.exports = {
         compress: true,
         port: 8080
     },
-
+    plugins: [
+      new webpack.ProvidePlugin({
+        process: "process/browser",
+      }),
+    ],
     resolve: {
         fallback: {
           path: false,
