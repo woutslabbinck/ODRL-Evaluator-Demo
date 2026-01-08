@@ -3,7 +3,8 @@ import { ODRLEvaluator, ODRLEngineMultipleSteps } from 'odrl-evaluator';
 import { Parser, Store } from 'n3';
 import { loadWebTestCase } from 'odrl-test-suite';
 import { write } from '@jeswr/pretty-turtle';
-import { createVocabulary } from 'rdf-vocabulary'
+import { writePolicy, fetchPolicy, writeRequest, fetchRequest, showLoader, fetchSOTW, hideLoader, writeComplianceReport, writeSOTW } from './dom';
+
 let indexStore = new Store()
 let index = {}
 const parser = new Parser();
@@ -229,7 +230,7 @@ function loadODRL3Cases() {
  * @param {string} data 
  * @returns 
  */
-function fetchDescription(data) {
+export function fetchDescription(data) {
     let store
     try {
         store = new Store(parser.parse(data));
@@ -246,142 +247,6 @@ function fetchDescription(data) {
     }
     return description.object.value
 }
-
-/**
- * Calculates human readable feedback based on an ODRL Compliance Report
- * @param {string} report 
- */
-function humanReadableReport(report) {
-    const reportStore = new Store(parser.parse(report));
-    const requestStore = new Store(parser.parse(fetchRequest())); // technically can error, tho chances are slim
-
-    const reportNodes = reportStore.getQuads(null, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", CR.terms.PolicyReport, null);
-    if (reportNodes.length !== 1) {
-        throw Error(`Expected one expected report identifier. Found ${reportNodes.length}`);
-    }
-    const reportID = reportNodes[0].subject.id;
-    const policyReport = parseComplianceReport(reportID, reportStore);
-
-    // assumes only one request permission
-    const requestSubject = requestStore.getQuads(null, "http://www.w3.org/ns/odrl/2/assignee", null, null)[0].object.value;
-    const requestAction = requestStore.getQuads(null, "http://www.w3.org/ns/odrl/2/action", null, null)[0].object.value;
-    const requestResource = requestStore.getQuads(null, "http://www.w3.org/ns/odrl/2/target", null, null)[0].object.value;
-
-    let humanReadable = ""
-    // Note: currently, we only care about one report
-    switch (policyReport.ruleReport[0].type) {
-        case CR.PermissionReport:
-            if (policyReport.ruleReport[0].activationState === CR.Active) {
-                humanReadable = `<b>${requestSubject}</b> is ALLOWED to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
-            } else {
-                humanReadable = `<b>${requestSubject}</b> is NOT ALLOWED to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
-            }
-            break;
-        case CR.ProhibitionReport:
-            if (policyReport.ruleReport[0].activationState === CR.Active) {
-                humanReadable = `<b>${requestSubject}</b> is NOT ALLOWED to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
-            } else {
-                humanReadable = `Not enough information is present to determine whether <b>${requestSubject}</b> is allowed to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
-            }
-            break;
-        default:
-            humanReadable = `Not enough information is present to determine whether <b>${requestSubject}</b> is allowed to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
-    }
-    return humanReadable
-}
-
-/**
- * Fetches the ODRL policy from DOM.
- * @returns {string} The policy value.
- */
-function fetchPolicy() {
-    return document.getElementById('policy').value;
-}
-
-/**
- * Writes a new value to the ODRL policy to DOM.
- * Also calculates and writes the description of the policy to the DOM.
- * @param {string} newValue The new policy value to set.
- */
-function writePolicy(newValue) {
-    document.getElementById('policy').value = newValue;
-    const description = fetchDescription(newValue);
-    document.getElementById('policy-info').textContent = description
-
-}
-
-/**
- * Fetches the request from DOM.
- * @returns {string} The request value.
- */
-function fetchRequest() {
-    return document.getElementById('request').value;
-
-}
-
-/**
- * Writes a new value to the request to DOM.
- * Also calculates and writes the description of the policy to the DOM.
- * @param {string} newValue The new request value to set.
- */
-function writeRequest(newValue) {
-    document.getElementById('request').value = newValue;
-    const description = fetchDescription(newValue);
-    document.getElementById('request-info').textContent = description
-}
-
-/**
- * Fetches the SOTW (State of the World) from DOM.
- * @returns {string} The SOTW value.
- */
-function fetchSOTW() {
-    return document.getElementById('sotw').value;
-}
-
-/**
- * Writes a new value to the SOTW (State of the World) to DOM.
- * @param {string} newValue The new SOTW value to set.
- */
-function writeSOTW(newValue) {
-    document.getElementById('sotw').value = newValue;
-}
-
-/**
- * Fetches the ODRL Compliance Report from DOM.
- * @returns {string} The compliance report value.
- */
-function fetchComplianceReport() {
-    return document.getElementById('output').value;
-}
-
-/**
- * Writes a new value to the ODRL Compliance Report to DOM.
- * @param {string} newValue The new compliance report value to set.
- */
-function writeComplianceReport(newValue) {
-    document.getElementById('output').innerText = newValue;
-    try {
-        const description = humanReadableReport(newValue);
-        document.getElementById('output-info').innerHTML = description;
-    } catch (error) {
-        document.getElementById('output-info').innerHTML = "";
-    }
-}
-
-/**
- * Shows the loading indication in the DOM
- */
-function showLoader() {
-    document.getElementById('loader-text').style.display = 'block';
-}
-
-/**
- * Hides the loading indication in the DOM
- */
-function hideLoader() {
-    document.getElementById('loader-text').style.display = 'none';
-}
-
 
 const defaultPolicy = `@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
 @prefix ex: <http://example.org/>.
@@ -463,112 +328,3 @@ temp:currentTime dct:issued "2017-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/
 
 # external value that will be materialized in the policy
 ex:externalSource ex:updatedValue "2016-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`
-
-// copied from https://github.com/SolidLabResearch/user-managed-access/blob/feat/ODRL-evaluator/packages/uma/src/policies/authorizers/OdrlAuthorizer.ts
-// TODO: remove after merge with https://github.com/SolidLabResearch/ODRL-Evaluator/tree/feat/policy-atomization
-const CR = createVocabulary('https://w3id.org/force/compliance-report#',
-    'PolicyReport',
-    'RuleReport',
-    'PermissionReport',
-    'ProhibitionReport',
-    'DutyReport',
-    'PremiseReport',
-    'ConstraintReport',
-    'PartyReport',
-    'ActionReport',
-    'TargetReport',
-    'ActivationState',
-    'Active',
-    'Inactive',
-    'AttemptState',
-    'Attempted',
-    'NotAttempted',
-    'PerformanceState',
-    'Performed',
-    'Unperformed',
-    'Unknown',
-    'DeonticState',
-    'NonSet',
-    'Violated',
-    'Fulfilled',
-    'SatisfactionState',
-    'Satisfied',
-    'Unsatisfied',
-    'policy',
-    'policyRequest',
-    'ruleReport',
-    'conditionReport',
-    'premiseReport',
-    'rule',
-    'ruleRequest',
-    'activationState',
-    'attemptState',
-    'performanceState',
-    'deonticState',
-    'constraint',
-    'satisfactionState',
-);
-
-// Enum-like structures using Object.freeze()
-const RuleReportType = Object.freeze({
-    PermissionReport: 'http://example.com/report/temp/PermissionReport',
-    ProhibitionReport: 'http://example.com/report/temp/ProhibitionReport',
-    ObligationReport: 'http://example.com/report/temp/ObligationReport',
-});
-
-const SatisfactionState = Object.freeze({
-    Satisfied: 'http://example.com/report/temp/Satisfied',
-    Unsatisfied: 'http://example.com/report/temp/Unsatisfied',
-});
-
-const PremiseReportType = Object.freeze({
-    ConstraintReport: 'http://example.com/report/temp/ConstraintReport',
-    PartyReport: 'http://example.com/report/temp/PartyReport',
-    TargetReport: 'http://example.com/report/temp/TargetReport',
-    ActionReport: 'http://example.com/report/temp/ActionReport',
-});
-
-const ActivationState = Object.freeze({
-    Active: 'http://example.com/report/temp/Active',
-    Inactive: 'http://example.com/report/temp/Inactive',
-});
-
-// Functions rewritten in plain JavaScript
-function parseComplianceReport(identifier, store) {
-    const exists = store.getQuads(identifier, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", CR.PolicyReport, null).length === 1;
-    if (!exists) {
-        throw new Error(`No Policy Report found with: ${identifier}.`);
-    }
-    const ruleReportNodes = store.getObjects(identifier, CR.ruleReport, null);
-
-    return {
-        id: identifier,
-        created: store.getObjects(identifier, "http://purl.org/dc/terms/created", null)[0],
-        policy: store.getObjects(identifier, CR.policy, null)[0],
-        request: store.getObjects(identifier, CR.policyRequest, null)[0],
-        ruleReport: ruleReportNodes.map(ruleReportNode => parseRuleReport(ruleReportNode, store)),
-    };
-}
-
-function parseRuleReport(identifier, store) {
-    const premiseNodes = store.getObjects(identifier, CR.premiseReport, null);
-    return {
-        id: identifier,
-        type: store.getObjects(identifier, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null)[0].value,
-        activationState: store.getObjects(identifier, CR.activationState, null)[0].value,
-        requestedRule: store.getObjects(identifier, CR.ruleRequest, null)[0],
-        rule: store.getObjects(identifier, CR.rule, null)[0],
-        premiseReport: premiseNodes.map(prem => parsePremiseReport(prem, store)),
-    };
-}
-
-function parsePremiseReport(identifier, store) {
-    const nestedPremises = store.getObjects(identifier, CR.PremiseReport, null);
-    return {
-        id: identifier,
-        type: store.getObjects(identifier, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null)[0].value,
-        premiseReport: nestedPremises.map(prem => parsePremiseReport(prem, store)),
-        satisfactionState: store.getObjects(identifier, CR.satisfactionState, null)[0].value,
-    };
-}
-
