@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <title>FORCE</title>
+    <script src="./main.js"></script>
+    <style>
+        .no-underline {
+            text-decoration: none;
+        }
+
+        .button-wrapper {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .flex-container {
+            display: flex;
+            align-items: center;
+            /* Align items vertically in the center */
+        }
+
+        #loader-text {
+            display: none;
+        }
+
+        /* Ensure label text stays on a single line */
+        label {
+            white-space: nowrap;
+        }
+
+        /* Style to make dropdown and button appear side by side */
+        .dropdown-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            /* Space between dropdown and button */
+        }
+
+        .highlight-info {
+            color: var(--pico-primary)
+        }
+
+        .logo {
+            height: 100px; 
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px
+        }
+    </style>
+</head>
+
+<body data-mode="solidlab">
+    <div class="container">
+        <header class="page-header">
+            <h1 class="title">Framework for ODRL Rule Compliance through Evaluation</h1>
+            <a  href="https://w3id.org/force">
+                <img src="img/FORCE_logo.svg" alt="Logo" class="logo">
+            </a>
+        </header>
+        <p>
+            The Framework for ODRL Rule Compliance through Evaluation (FORCE) is open-source software that realizes the
+            evaluation of an ODRL policy using the <a href="https://github.com/SolidLabResearch/ODRL-Evaluator"
+                class="no-underline">ODRL Evaluator</a>.
+            It does so by generating a <a class="no-underline"
+                href="https://github.com/SolidLabResearch/ODRL-Compliance-Report-Model">Compliance Report</a>,
+            that states clearly for each policy which rules are active or not and the reason why through the
+            satisfaction state of its constraints. <br>
+            To further aid understanding, this web page provides a ton of examples. To load an example, you can select a test case from the <a class="no-underline"
+            href="https://github.com/SolidLabResearch/ODRL-Test-Suite">ODRL Test Suite</a> using the dropdown menu below.
+        </p>
+        <div class="dropdown-container">
+            <label for="dropdown">Select a Test Case:</label>
+            <select id="dropdown">
+                <!-- Options will be dynamically populated -->
+            </select>
+        </div>
+        <table>
+            <tr>
+                <td>
+                    <h3>ODRL Request</h3>
+                    <i id="request-info" class="highlight-info"></i>
+                    <textarea id="request" rows="15" cols="55"></textarea>
+                </td>
+                <td>
+                    <h3>ODRL Policy</h3>
+                    <i id="policy-info" class="highlight-info"></i>
+                    <textarea id="policy" rows="15" cols="55"></textarea>
+                </td>
+            </tr>
+        </table>
+
+        <h3>State of the World</h3>
+        <textarea id="sotw" rows="5" cols="55"></textarea>
+        </td>
+        </tr>
+        </table>
+        <div class="flex-container">
+            <button id='evaluate'>Evaluate</button>
+            <p id="loader-text">Evaluating the policy...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>ODRL Compliance Report</h3>
+        <i id="output-info" class="highlight-info"></i>
+        <pre id="output"></pre>
+    </div>
+    <div class="container">
+
+        <h2>Why the ODRL Evaluator?</h2>
+        <p>
+            The <a><a href="https://www.w3.org/TR/odrl-model/" class="no-underline">Open Digital Rights Language (ODRL)</a> is
+                a W3C standard that is used to express usage control policies.
+                However, the lack of defined interpretations for these policies leads to inconsistencies and
+                interoperability issues across different platforms.
+        </p>
+        <p>
+            One notable example of these issues is the interpretation of constraint values as defined by ODRL. Consider
+            <code><a href="https://www.w3.org/TR/odrl-vocab/#term-dateTime" class="no-underline">odrl:dateTime</a></code>,
+            which is described as
+            <q><i>The date (and optional time and timezone) of exercising the action of the Rule</i></q>.
+            While this implies that the current time should be used, there is no mechanism within ODRL to prove that the
+            evaluation occurred at the specified time. This problem extends to all left operand values in ODRL.
+        </p>
+
+        <p>
+            Recognizing this need, the <a href="https://w3c.github.io/odrl/formal-semantics/" class="no-underline">ODRL
+                Formal Semantics</a> group laid the groundwork for the expected behaviour of an <b>ODRL Evaluator</b>.
+        </p>
+
+        <p>
+            Based on that work, we created the <a
+                href="https://github.com/SolidLabResearch/ODRL-Compliance-Report-Model" class="no-underline">ODRL Compliance Report Model</a>
+            to represent the output of an ODRL Evaluator.
+            This live demonstrater here generates these reports through reasoning over the inputs:
+        <ul>
+            <li>ODRL Policy</li>
+            <li>ODRL Request: A formal description of the request containing the intended action <i>(represented as an
+                    ODRL Request with one ODRL permission rule)</i></li>
+            <li>State of the World: A formal description of the state of the world<i>(including current time)</i></li>
+        </ul>
+        </p>
+
+        <p>All the calculations are performed in the browser, facilitated through the <a
+                href="https://github.com/eyereasoner/eye-js" class="no-underline">EYE JS</a> reasoning engine</p>
+        <p><i> ©2025–now <a href="http://www.ugent.be/" class="no-underline">Ghent University</a> – <a
+                    href="http://www.imec.be/" class="no-underline">imec</a>, Belgium. <a
+                    href="https://w3id.org/force/demo/repo" class="no-underline">Source
+                    code</a>.</i></p>
+    </div>
+</body>
+
+</html>

@@ -5,12 +5,14 @@ import { ODRLEngineMultipleSteps, ODRLEvaluator } from 'odrl-evaluator';
 import { DefaultMode } from './controller/DefaultMode';
 import { fetchPolicy, fetchRequest, fetchSOTW, hideLoader, showLoader, writeComplianceReport, writePolicy, writeRequest } from './dom';
 import { ODRL3Mode } from './controller/ODRL3Mode';
+import { SolidLabMode } from './controller/SolidlabMode';
 import { prefixes } from './util/prefixes';
 const evaluator = new ODRLEvaluator(new ODRLEngineMultipleSteps());
 
 
 const DEFAULT = "default"
 const ODRL3 = "odrl3"
+const SOLIDLAB = "solidlab"
 // variable used across index.js to know which mode is being used
 /**
  * Allowed values:
@@ -29,22 +31,22 @@ let dropdownMenu
 
 let controller
 
-class SolidLabDemoMode {
-
-}
 document.addEventListener('DOMContentLoaded', (event) => {
     dropdownMenu = document.getElementById("dropdown");
 
     mode = document.body.dataset.mode;
     switch (mode) {
         case DEFAULT:
-            controller = new DefaultMode(dropdownMenu)            
+            controller = new DefaultMode(dropdownMenu)
             break;
         case ODRL3:
-            controller = new ODRL3Mode(dropdownMenu)            
+            controller = new ODRL3Mode(dropdownMenu)
+            break;
+        case SOLIDLAB:
+            controller = new SolidLabMode(dropdownMenu)
             break;
         default:
-            controller = new DefaultMode(dropdownMenu)            
+            controller = new DefaultMode(dropdownMenu)
             break;
     }
     dropdownMenu.addEventListener('change', controller.selectDropdownValue.bind(controller))

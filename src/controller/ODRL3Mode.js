@@ -104,6 +104,7 @@ const dynamicPolicy = `
 ex:operandReference1 a odrl3proposal:OperandReference ;
     odrl3proposal:reference ex:externalSource ;
     odrl3proposal:path ex:updatedValue .`;
+    
 const dynamicSOTWPositive = `@prefix ex: <http://example.org/> .
 @prefix temp: <http://example.com/request/> .
 @prefix dct: <http://purl.org/dc/terms/> .
@@ -115,6 +116,7 @@ temp:currentTime dct:issued "2017-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/
 
 # external value that will be materialized in the policy
 ex:externalSource ex:updatedValue "2018-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`;
+
 const dynamicSOTWNegative = `@prefix ex: <http://example.org/> .
 @prefix temp: <http://example.com/request/> .
 @prefix dct: <http://purl.org/dc/terms/> .
