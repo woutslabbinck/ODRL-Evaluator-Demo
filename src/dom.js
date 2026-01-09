@@ -1,4 +1,5 @@
-const { fetchDescription } = require(".");
+const { } = require(".");
+const { fetchDescription } = require('./util/util');
 const { humanReadableReport } = require("./util/ReportInterpretation");
 
 
