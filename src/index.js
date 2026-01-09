@@ -1,28 +1,18 @@
 
-import { ODRLEvaluator, ODRLEngineMultipleSteps } from 'odrl-evaluator';
-import { Parser, Store } from 'n3';
-import { loadWebTestCase } from 'odrl-test-suite';
 import { write } from '@jeswr/pretty-turtle';
-import { createVocabulary } from 'rdf-vocabulary'
-let indexStore = new Store()
-let index = {}
-const parser = new Parser();
+import { Parser } from 'n3';
+import { ODRLEngineMultipleSteps, ODRLEvaluator } from 'odrl-evaluator';
+import { DefaultMode } from './controller/DefaultMode';
+import { fetchPolicy, fetchRequest, fetchSOTW, hideLoader, showLoader, writeComplianceReport, writePolicy, writeRequest } from './dom';
+import { ODRL3Mode } from './controller/ODRL3Mode';
+import { SolidLabMode } from './controller/SolidlabMode';
+import { prefixes } from './util/prefixes';
 const evaluator = new ODRLEvaluator(new ODRLEngineMultipleSteps());
 
 
-const prefixes = {
-    'odrl': 'http://www.w3.org/ns/odrl/2/',
-    'ex': 'http://example.org/',
-    'temp': 'http://example.com/request/',
-    'dct': 'http://purl.org/dc/terms/',
-    'xsd': 'http://www.w3.org/2001/XMLSchema#',
-    'foaf': 'http://xmlns.com/foaf/0.1/',
-    'report': 'https://w3id.org/force/compliance-report#',
-    'odrl3proposal': 'https://w3id.org/force/odrl3proposal#',
-}
-
 const DEFAULT = "default"
 const ODRL3 = "odrl3"
+const SOLIDLAB = "solidlab"
 // variable used across index.js to know which mode is being used
 /**
  * Allowed values:
@@ -31,27 +21,38 @@ const ODRL3 = "odrl3"
  */
 let mode = DEFAULT
 
-// only in the normal version
-let dropdownDefault
+// the dropdown for loading in test cases
+let dropdownMenu
 
-// only in the odrl 3.0 version
-let dropdownODRL3Cases;
+// loading function: creating the testcases index and loading that into the dropdown menu
+// change function: selects the testcase and loads the appropriate inputs into the dropdown menu
+// reset function: reset to the default state in case there was an error
+
+
+let controller
 
 document.addEventListener('DOMContentLoaded', (event) => {
-    dropdownDefault = document.getElementById("dropdown");
-    dropdownODRL3Cases = document.getElementById("odrl3-dropdown");
+    dropdownMenu = document.getElementById("dropdown");
 
-    if (dropdownDefault) {
-        dropdownDefault.addEventListener('change', loadTestCase)
+    mode = document.body.dataset.mode;
+    switch (mode) {
+        case DEFAULT:
+            controller = new DefaultMode(dropdownMenu)
+            break;
+        case ODRL3:
+            controller = new ODRL3Mode(dropdownMenu)
+            break;
+        case SOLIDLAB:
+            controller = new SolidLabMode(dropdownMenu)
+            break;
+        default:
+            controller = new DefaultMode(dropdownMenu)
+            break;
     }
+    dropdownMenu.addEventListener('change', controller.selectDropdownValue.bind(controller))
+
     document.getElementById('evaluate').addEventListener('click', odrlEvaluate)
 
-    if (dropdownODRL3Cases) {
-        mode = ODRL3
-        dropdownODRL3Cases.addEventListener('change', loadODRL3Cases);
-
-    }
-    
     init();
     // allows to edit the description live (kind of ugly, but it works)
     document.getElementById('policy').addEventListener('input', () => {
@@ -64,20 +65,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 function init() {
     // Initialise the policies
-    reset();
+    controller.reset();
     // load test cases when application starts
-    switch (mode) {
-        case DEFAULT:
-            loadTestCaseIndex();
-            break;
-        case ODRL3:
-            generateDropdownODRL3Cases();
-            break;
-        default:
-            loadTestCaseIndex();
-            break;
-    }
+    controller.populateDropdown()
+
 }
+
+
 
 /**
  * Evaluate the policy using the {@link ODRLEvaluator}
@@ -86,6 +80,8 @@ function init() {
  * @returns 
  */
 async function odrlEvaluate() {
+    const parser = new Parser();
+
     showLoader()
     const odrlPolicyText = fetchPolicy();
     const odrlRequestText = fetchRequest();
@@ -98,7 +94,8 @@ async function odrlEvaluate() {
     } catch (error) {
         const option = confirm("Error parsing the input, not all of them are valid RDF.\nDo you want to reset the input fields?");
         if (option) {
-            reset()
+            controller.reset();
+
         }
         return
     }
@@ -115,460 +112,4 @@ async function odrlEvaluate() {
     writeComplianceReport(prettyResult);
 }
 
-
-/**
- * Reset the content of the policy, request and sotw to the default state.
- */
-function reset() {
-    hideLoader()
-    switch (mode) {
-        case DEFAULT:
-            writePolicy(defaultPolicy)
-            writeRequest(defaultRequest)
-            writeSOTW(defaultSOTW)
-            break;
-        case ODRL3:
-            writePolicy(dynamicPolicy);
-            writeRequest(defaultRequest);
-            writeSOTW(dynamicSOTWPositive);
-            break;
-        default:
-            writePolicy(defaultPolicy)
-            writeRequest(defaultRequest)
-            writeSOTW(defaultSOTW)
-            break;
-    }
-    writeComplianceReport("")
-}
-
-/**
- * Fetches the index and writes them to the dropdown menu
- */
-async function loadTestCaseIndex() {
-    const indexResponse = await fetch("https://raw.githubusercontent.com/SolidLabResearch/ODRL-Test-Suite/refs/heads/main/data/index.ttl")
-    const indexText = await indexResponse.text();
-    indexStore.addQuads(parser.parse(indexText))
-
-    const titles = indexStore.getQuads(null, 'http://purl.org/dc/terms/title', null, null);
-    for (const title of titles) {
-        index[title.subject.id] = title.object.value
-    }
-
-    if (dropdownDefault) {
-        Object.entries(index).forEach(([key, value]) => {
-            const option = document.createElement("option");
-            option.value = key; // Store the key
-            option.textContent = value; // Display the value
-            dropdownDefault.appendChild(option);
-        });
-    }
-}
-
-/**
- * Creates the dropdown menu for ODRL proposals
- * TODO: should be hosted somewhere dynamically
- *      Preferably in the github repo of https://w3id.org/force/odrl3proposal
- */
-async function generateDropdownODRL3Cases() {
-    const option = document.createElement("option");
-    option.value = "dynamic-positive"; // Store the key
-    option.textContent = "Dynamic ODRL Constraint (positive)"; // Display the value
-    dropdownODRL3Cases.appendChild(option);
-
-    const option2 = document.createElement("option");
-    option2.value = "dynamic-negative"; // Store the key
-    option2.textContent = "Dynamic ODRL Constraint (negative)"; // Display the value
-    dropdownODRL3Cases.appendChild(option2);
-}
-/**
- * Loads the selected test case in the DOM.
- * Also resets potential created compliance Reports.
- */
-async function loadTestCase() {
-    if (dropdownDefault) {
-        const testCase = await loadWebTestCase(dropdownDefault.value, [...indexStore]);
-
-        writePolicy(await write(testCase.policy.quads, { prefixes }));
-        writeRequest(await write(testCase.request.quads, { prefixes }));
-        writeSOTW(await write(testCase.stateOfTheWorld.quads, { prefixes }));
-        writeComplianceReport("")
-    }
-}
-
-/**
- * Loads the selected test case in the DOM.
- * Also resets potential created compliance Reports.
- * 
- * NOTE: currently, these test cases are hard coded as there only a few of them. 
- *      It is based on the keys defined in the function `generateDropdownODRL3Cases`
- * TODO: fix after `generateDropdownODRL3Cases` it is issue is fixed
-*/
-function loadODRL3Cases() {
-    if (dropdownODRL3Cases) {
-        const testCase = dropdownODRL3Cases.value
-
-        switch (testCase) {
-            case "dynamic-positive":
-                writeSOTW(dynamicSOTWPositive);
-                break;
-            case "dynamic-negative":
-                writeSOTW(dynamicSOTWNegative);
-                break;
-            default:
-                break;
-        }
-        writePolicy(dynamicPolicy);
-        writeRequest(defaultRequest);
-        writeComplianceReport("")
-    }
-}
-
-/**
- * Fetches the description from data (that contains a description).
- * Note that it fetches the first description, so you might give an error if an extra description is added.
- * @param {string} data 
- * @returns 
- */
-function fetchDescription(data) {
-    let store
-    try {
-        store = new Store(parser.parse(data));
-    } catch (error) {
-        return
-    }
-    if (!store) {
-        return
-    }
-    const description = store.getQuads(null, 'http://purl.org/dc/terms/description', null, null)[0];
-    if (!description) {
-        // no description exist,
-        return
-    }
-    return description.object.value
-}
-
-/**
- * Calculates human readable feedback based on an ODRL Compliance Report
- * @param {string} report 
- */
-function humanReadableReport(report) {
-    const reportStore = new Store(parser.parse(report));
-    const requestStore = new Store(parser.parse(fetchRequest())); // technically can error, tho chances are slim
-
-    const reportNodes = reportStore.getQuads(null, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", CR.terms.PolicyReport, null);
-    if (reportNodes.length !== 1) {
-        throw Error(`Expected one expected report identifier. Found ${reportNodes.length}`);
-    }
-    const reportID = reportNodes[0].subject.id;
-    const policyReport = parseComplianceReport(reportID, reportStore);
-
-    // assumes only one request permission
-    const requestSubject = requestStore.getQuads(null, "http://www.w3.org/ns/odrl/2/assignee", null, null)[0].object.value;
-    const requestAction = requestStore.getQuads(null, "http://www.w3.org/ns/odrl/2/action", null, null)[0].object.value;
-    const requestResource = requestStore.getQuads(null, "http://www.w3.org/ns/odrl/2/target", null, null)[0].object.value;
-
-    let humanReadable = ""
-    // Note: currently, we only care about one report
-    switch (policyReport.ruleReport[0].type) {
-        case CR.PermissionReport:
-            if (policyReport.ruleReport[0].activationState === CR.Active) {
-                humanReadable = `<b>${requestSubject}</b> is ALLOWED to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
-            } else {
-                humanReadable = `<b>${requestSubject}</b> is NOT ALLOWED to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
-            }
-            break;
-        case CR.ProhibitionReport:
-            if (policyReport.ruleReport[0].activationState === CR.Active) {
-                humanReadable = `<b>${requestSubject}</b> is NOT ALLOWED to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
-            } else {
-                humanReadable = `Not enough information is present to determine whether <b>${requestSubject}</b> is allowed to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
-            }
-            break;
-        default:
-            humanReadable = `Not enough information is present to determine whether <b>${requestSubject}</b> is allowed to perform <b>${requestAction}</b> on <b>${requestResource}</b>.`
-    }
-    return humanReadable
-}
-
-/**
- * Fetches the ODRL policy from DOM.
- * @returns {string} The policy value.
- */
-function fetchPolicy() {
-    return document.getElementById('policy').value;
-}
-
-/**
- * Writes a new value to the ODRL policy to DOM.
- * Also calculates and writes the description of the policy to the DOM.
- * @param {string} newValue The new policy value to set.
- */
-function writePolicy(newValue) {
-    document.getElementById('policy').value = newValue;
-    const description = fetchDescription(newValue);
-    document.getElementById('policy-info').textContent = description
-
-}
-
-/**
- * Fetches the request from DOM.
- * @returns {string} The request value.
- */
-function fetchRequest() {
-    return document.getElementById('request').value;
-
-}
-
-/**
- * Writes a new value to the request to DOM.
- * Also calculates and writes the description of the policy to the DOM.
- * @param {string} newValue The new request value to set.
- */
-function writeRequest(newValue) {
-    document.getElementById('request').value = newValue;
-    const description = fetchDescription(newValue);
-    document.getElementById('request-info').textContent = description
-}
-
-/**
- * Fetches the SOTW (State of the World) from DOM.
- * @returns {string} The SOTW value.
- */
-function fetchSOTW() {
-    return document.getElementById('sotw').value;
-}
-
-/**
- * Writes a new value to the SOTW (State of the World) to DOM.
- * @param {string} newValue The new SOTW value to set.
- */
-function writeSOTW(newValue) {
-    document.getElementById('sotw').value = newValue;
-}
-
-/**
- * Fetches the ODRL Compliance Report from DOM.
- * @returns {string} The compliance report value.
- */
-function fetchComplianceReport() {
-    return document.getElementById('output').value;
-}
-
-/**
- * Writes a new value to the ODRL Compliance Report to DOM.
- * @param {string} newValue The new compliance report value to set.
- */
-function writeComplianceReport(newValue) {
-    document.getElementById('output').innerText = newValue;
-    try {
-        const description = humanReadableReport(newValue);
-        document.getElementById('output-info').innerHTML = description;
-    } catch (error) {
-        document.getElementById('output-info').innerHTML = "";
-    }
-}
-
-/**
- * Shows the loading indication in the DOM
- */
-function showLoader() {
-    document.getElementById('loader-text').style.display = 'block';
-}
-
-/**
- * Hides the loading indication in the DOM
- */
-function hideLoader() {
-    document.getElementById('loader-text').style.display = 'none';
-}
-
-
-const defaultPolicy = `@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
-@prefix ex: <http://example.org/>.
-@prefix dct: <http://purl.org/dc/terms/>.
-
-<urn:uuid:95efe0e8-4fb7-496d-8f3c-4d78c97829bc> a odrl:Set;
-    dct:description "ZENO is data owner of resource X. ALICE may READ resource X.";
-    dct:source <https://github.com/woutslabbinck/UCR-test-suite/blob/main/ODRL-Example.md>;
-    odrl:permission <urn:uuid:f5199b0a-d824-45a0-bc08-1caa8d19a001>.
-<urn:uuid:f5199b0a-d824-45a0-bc08-1caa8d19a001> a odrl:Permission;
-    odrl:action odrl:read;
-    odrl:target ex:x;
-    odrl:assignee ex:alice;
-    odrl:assigner ex:zeno.`
-const defaultRequest = `@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
-@prefix ex: <http://example.org/>.
-@prefix dct: <http://purl.org/dc/terms/>.
-
-<urn:uuid:1bafee59-006c-46a3-810c-5d176b4be364> a odrl:Request;
-    dct:description "Requesting Party ALICE requests to READ resource X.";
-    odrl:permission <urn:uuid:186be541-5857-4ce3-9f03-1a274f16bf59>.
-<urn:uuid:186be541-5857-4ce3-9f03-1a274f16bf59> a odrl:Permission;
-    odrl:assignee ex:alice;
-    odrl:action odrl:read;
-    odrl:target ex:x.`
-const defaultSOTW = `@prefix temp: <http://example.com/request/>.
-@prefix dct: <http://purl.org/dc/terms/>.
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
-
-temp:currentTime dct:issued "2024-02-12T11:20:10.999Z"^^xsd:dateTime.`
-
-const dynamicPolicy = `
-@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
-@prefix ex: <http://example.org/> .
-@prefix dct: <http://purl.org/dc/terms/> .
-@prefix odrl3proposal: <https://w3id.org/force/odrl3proposal#> .
-
-<urn:uuid:5297a939-c364-4f93-a8bc-187cc58c8617> a odrl:Set ;
-  odrl:uid <urn:uuid:5297a939-c364-4f93-a8bc-187cc58c8617> ;
-  dct:description "ALICE may READ resource X when the current time (SotW) is before 'ex:updateValue' (see SotW)." ;
-  odrl:permission <urn:uuid:3b03885a-b6dc-4800-9938-f518122c9706> .
-
-<urn:uuid:3b03885a-b6dc-4800-9938-f518122c9706> a odrl:Permission ;
-  odrl:assignee ex:alice ;
-  odrl:action odrl:read ;
-  odrl:target ex:x ;
-  odrl:constraint <urn:uuid:constraint:ab67b414-d0c8-48f6-8554-524130561f84> .
-
-<urn:uuid:constraint:ab67b414-d0c8-48f6-8554-524130561f84> odrl:leftOperand odrl:dateTime ;
-  odrl:operator odrl:lt ;
-  odrl:rightOperandReference ex:operandReference1 .
-
-ex:operandReference1 a odrl3proposal:OperandReference ;
-    odrl3proposal:reference ex:externalSource ;
-    odrl3proposal:path ex:updatedValue .`
-
-const dynamicSOTWPositive =
-    `@prefix ex: <http://example.org/> .
-@prefix temp: <http://example.com/request/> .
-@prefix dct: <http://purl.org/dc/terms/> .
-
-<urn:uuid:192620fa-06d9-447b-adbd-bd1ece4f9b12> a ex:Sotw ;
-  ex:includes temp:currentTime .
-
-temp:currentTime dct:issued "2017-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-
-# external value that will be materialized in the policy
-ex:externalSource ex:updatedValue "2018-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`
-
-const dynamicSOTWNegative =
-    `@prefix ex: <http://example.org/> .
-@prefix temp: <http://example.com/request/> .
-@prefix dct: <http://purl.org/dc/terms/> .
-
-<urn:uuid:192620fa-06d9-447b-adbd-bd1ece4f9b12> a ex:Sotw ;
-  ex:includes temp:currentTime .
-
-temp:currentTime dct:issued "2017-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-
-# external value that will be materialized in the policy
-ex:externalSource ex:updatedValue "2016-02-12T11:20:10.999Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`
-
-// copied from https://github.com/SolidLabResearch/user-managed-access/blob/feat/ODRL-evaluator/packages/uma/src/policies/authorizers/OdrlAuthorizer.ts
-// TODO: remove after merge with https://github.com/SolidLabResearch/ODRL-Evaluator/tree/feat/policy-atomization
-const CR = createVocabulary('https://w3id.org/force/compliance-report#',
-    'PolicyReport',
-    'RuleReport',
-    'PermissionReport',
-    'ProhibitionReport',
-    'DutyReport',
-    'PremiseReport',
-    'ConstraintReport',
-    'PartyReport',
-    'ActionReport',
-    'TargetReport',
-    'ActivationState',
-    'Active',
-    'Inactive',
-    'AttemptState',
-    'Attempted',
-    'NotAttempted',
-    'PerformanceState',
-    'Performed',
-    'Unperformed',
-    'Unknown',
-    'DeonticState',
-    'NonSet',
-    'Violated',
-    'Fulfilled',
-    'SatisfactionState',
-    'Satisfied',
-    'Unsatisfied',
-    'policy',
-    'policyRequest',
-    'ruleReport',
-    'conditionReport',
-    'premiseReport',
-    'rule',
-    'ruleRequest',
-    'activationState',
-    'attemptState',
-    'performanceState',
-    'deonticState',
-    'constraint',
-    'satisfactionState',
-);
-
-// Enum-like structures using Object.freeze()
-const RuleReportType = Object.freeze({
-    PermissionReport: 'http://example.com/report/temp/PermissionReport',
-    ProhibitionReport: 'http://example.com/report/temp/ProhibitionReport',
-    ObligationReport: 'http://example.com/report/temp/ObligationReport',
-});
-
-const SatisfactionState = Object.freeze({
-    Satisfied: 'http://example.com/report/temp/Satisfied',
-    Unsatisfied: 'http://example.com/report/temp/Unsatisfied',
-});
-
-const PremiseReportType = Object.freeze({
-    ConstraintReport: 'http://example.com/report/temp/ConstraintReport',
-    PartyReport: 'http://example.com/report/temp/PartyReport',
-    TargetReport: 'http://example.com/report/temp/TargetReport',
-    ActionReport: 'http://example.com/report/temp/ActionReport',
-});
-
-const ActivationState = Object.freeze({
-    Active: 'http://example.com/report/temp/Active',
-    Inactive: 'http://example.com/report/temp/Inactive',
-});
-
-// Functions rewritten in plain JavaScript
-function parseComplianceReport(identifier, store) {
-    const exists = store.getQuads(identifier, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", CR.PolicyReport, null).length === 1;
-    if (!exists) {
-        throw new Error(`No Policy Report found with: ${identifier}.`);
-    }
-    const ruleReportNodes = store.getObjects(identifier, CR.ruleReport, null);
-
-    return {
-        id: identifier,
-        created: store.getObjects(identifier, "http://purl.org/dc/terms/created", null)[0],
-        policy: store.getObjects(identifier, CR.policy, null)[0],
-        request: store.getObjects(identifier, CR.policyRequest, null)[0],
-        ruleReport: ruleReportNodes.map(ruleReportNode => parseRuleReport(ruleReportNode, store)),
-    };
-}
-
-function parseRuleReport(identifier, store) {
-    const premiseNodes = store.getObjects(identifier, CR.premiseReport, null);
-    return {
-        id: identifier,
-        type: store.getObjects(identifier, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null)[0].value,
-        activationState: store.getObjects(identifier, CR.activationState, null)[0].value,
-        requestedRule: store.getObjects(identifier, CR.ruleRequest, null)[0],
-        rule: store.getObjects(identifier, CR.rule, null)[0],
-        premiseReport: premiseNodes.map(prem => parsePremiseReport(prem, store)),
-    };
-}
-
-function parsePremiseReport(identifier, store) {
-    const nestedPremises = store.getObjects(identifier, CR.PremiseReport, null);
-    return {
-        id: identifier,
-        type: store.getObjects(identifier, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", null)[0].value,
-        premiseReport: nestedPremises.map(prem => parsePremiseReport(prem, store)),
-        satisfactionState: store.getObjects(identifier, CR.satisfactionState, null)[0].value,
-    };
-}
 
