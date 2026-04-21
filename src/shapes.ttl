@@ -1,0 +1,11 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
+@prefix sh: <http://www.w3.org/ns/shacl#>.
+
+<odrlShape> a sh:NodeShape;
+  sh:targetClass odrl:Request;
+  sh:property [
+    sh:path rdfs:label;
+    sh:minCount 1;
+  ].
+

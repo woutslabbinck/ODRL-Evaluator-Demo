@@ -3,11 +3,12 @@ import {
   setupLsp,
   setupVscodeApi,
   turtleExtension,
-  monaco,
 } from "swls-codemirror";
 
+import * as monaco from "@codingame/monaco-vscode-editor-api";
 import workerUrl from "swls-codemirror/lib/lsp-worker.js?url";
 
+import shapeUrl from "./shapes.ttl?url";
 import { fetchDescription } from "./util/util";
 import { humanReadableReport } from "./util/ReportInterpretation";
 
@@ -99,7 +100,7 @@ export async function startLsp() {
     workerUrl,
     {
       ontologies: [],
-      shapes: [],
+      shapes: [new URL(shapeUrl, window.location.origin).toString()],
     },
     turtleExtension.id,
   );

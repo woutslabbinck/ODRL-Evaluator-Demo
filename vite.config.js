@@ -1,13 +1,13 @@
 import importMetaUrlPlugin from "@codingame/esbuild-import-meta-url-plugin";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 import wasm from "vite-plugin-wasm";
-import topLevelAwait from "vite-plugin-top-level-await";
 
 export default {
   worker: {
     format: "es",
-    plugins: [wasm(), topLevelAwait()],
+    plugins: [wasm(), importMetaUrlPlugin],
   },
-  plugins: [wasm(), topLevelAwait(), importMetaUrlPlugin],
+  plugins: [wasm(), importMetaUrlPlugin, nodePolyfills()],
   define: {
     "process.env": {},
   },
@@ -15,7 +15,11 @@ export default {
     outDir: "dist",
     target: "esnext",
     rollupOptions: {
-      input: "docs/index.html",
+      input: {
+        main: "docs/index.html",
+        solidlab: "docs/solidlab.html",
+        odrl3: "docs/odrl3.0.html",
+      },
     },
   },
   resolve: {
