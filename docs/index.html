@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <title>FORCE</title>
-    <script src="./main.js"></script>
+    <script type="module" src="../src/index.js"></script>
     <style>
         .no-underline {
             text-decoration: none;
@@ -47,7 +47,7 @@
         }
 
         .logo {
-            height: 100px; 
+            height: 100px;
         }
 
         .page-header {
@@ -63,7 +63,7 @@
     <div class="container">
         <header class="page-header">
             <h1 class="title">Framework for ODRL Rule Compliance through Evaluation</h1>
-            <a  href="https://w3id.org/force">
+            <a href="https://w3id.org/force">
                 <img src="img/FORCE_logo.svg" alt="Logo" class="logo">
             </a>
         </header>
@@ -75,8 +75,9 @@
                 href="https://github.com/SolidLabResearch/ODRL-Compliance-Report-Model">Compliance Report</a>,
             that states clearly for each policy which rules are active or not and the reason why through the
             satisfaction state of its constraints. <br>
-            To further aid understanding, this web page provides a ton of examples. To load an example, you can select a test case from the <a class="no-underline"
-            href="https://github.com/SolidLabResearch/ODRL-Test-Suite">ODRL Test Suite</a> using the dropdown menu below.
+            To further aid understanding, this web page provides a ton of examples. To load an example, you can select a
+            test case from the <a class="no-underline" href="https://github.com/SolidLabResearch/ODRL-Test-Suite">ODRL
+                Test Suite</a> using the dropdown menu below.
         </p>
         <div class="dropdown-container">
             <label for="dropdown">Select a Test Case:</label>
@@ -89,18 +90,18 @@
                 <td>
                     <h3>ODRL Request</h3>
                     <i id="request-info" class="highlight-info"></i>
-                    <textarea id="request" rows="15" cols="55"></textarea>
+                    <div id="request" style="height: 300px"></div>
                 </td>
                 <td>
                     <h3>ODRL Policy</h3>
                     <i id="policy-info" class="highlight-info"></i>
-                    <textarea id="policy" rows="15" cols="55"></textarea>
+                    <div id="policy" style="height: 300px"></div>
                 </td>
             </tr>
         </table>
 
         <h3>State of the World</h3>
-        <textarea id="sotw" rows="5" cols="55"></textarea>
+        <div id="sotw" style="height: 100px"></div>
         </td>
         </tr>
         </table>
@@ -119,14 +120,16 @@
 
         <h2>Why the ODRL Evaluator?</h2>
         <p>
-            The <a><a href="https://www.w3.org/TR/odrl-model/" class="no-underline">Open Digital Rights Language (ODRL)</a> is
+            The <a><a href="https://www.w3.org/TR/odrl-model/" class="no-underline">Open Digital Rights Language
+                    (ODRL)</a> is
                 a W3C standard that is used to express usage control policies.
                 However, the lack of defined interpretations for these policies leads to inconsistencies and
                 interoperability issues across different platforms.
         </p>
         <p>
             One notable example of these issues is the interpretation of constraint values as defined by ODRL. Consider
-            <code><a href="https://www.w3.org/TR/odrl-vocab/#term-dateTime" class="no-underline">odrl:dateTime</a></code>,
+            <code><a href="https://www.w3.org/TR/odrl-vocab/#term-dateTime"
+                    class="no-underline">odrl:dateTime</a></code>,
             which is described as
             <q><i>The date (and optional time and timezone) of exercising the action of the Rule</i></q>.
             While this implies that the current time should be used, there is no mechanism within ODRL to prove that the
@@ -140,7 +143,8 @@
 
         <p>
             Based on that work, we created the <a
-                href="https://github.com/SolidLabResearch/ODRL-Compliance-Report-Model" class="no-underline">ODRL Compliance Report Model</a>
+                href="https://github.com/SolidLabResearch/ODRL-Compliance-Report-Model" class="no-underline">ODRL
+                Compliance Report Model</a>
             to represent the output of an ODRL Evaluator.
             This live demonstrater here generates these reports through reasoning over the inputs:
         <ul>
