@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <title>FORCE</title>
-    <script src="./main.js"></script>
+    <script type="module" src="../src/index.js"></script>
     <style>
         .no-underline {
             text-decoration: none;
@@ -95,18 +95,18 @@
                 <td>
                     <h3>ODRL Request</h3>
                     <i id="request-info" class="highlight-info"></i>
-                    <textarea id="request" rows="15" cols="55"></textarea>
+                    <div id="request" style="height: 300px"></div>
                 </td>
                 <td>
                     <h3>ODRL Policy</h3>
                     <i id="policy-info" class="highlight-info"></i>
-                    <textarea id="policy" rows="15" cols="55"></textarea>
+                    <div id="policy" style="height: 300px"></div>
                 </td>
             </tr>
         </table>
 
         <h3>State of the World</h3>
-        <textarea id="sotw" rows="5" cols="55"></textarea>
+        <div id="sotw" style="height: 100px"></div>
         </td>
         </tr>
         </table>

@@ -1,5 +1,5 @@
-const { Parser, Store } = require("n3");
-const { REPORT, parseComplianceReport } = require("odrl-evaluator");
+import { Parser, Store } from "n3";
+import { REPORT, parseComplianceReport } from "odrl-evaluator";
 
 
 /**
